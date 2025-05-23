@@ -63,16 +63,19 @@ export function DashboardLayout({ children, sidebar }: DashboardLayoutProps) {
         <header className="sticky top-0 z-10 bg-background border-b">
           <div className="flex h-16 items-center justify-between px-4 md:px-6">
             <div className="flex items-center gap-2">
-              <SheetTrigger asChild className="md:hidden">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsMobileSidebarOpen(true)}
-                >
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle Menu</span>
-                </Button>
-              </SheetTrigger>
+              {/* The SheetTrigger must be placed inside a Sheet component */}
+              <Sheet>
+                <SheetTrigger asChild className="md:hidden">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsMobileSidebarOpen(true)}
+                  >
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Toggle Menu</span>
+                  </Button>
+                </SheetTrigger>
+              </Sheet>
             </div>
 
             <div className="flex items-center gap-2">
@@ -130,3 +133,4 @@ export function DashboardLayout({ children, sidebar }: DashboardLayoutProps) {
 }
 
 export default DashboardLayout;
+
