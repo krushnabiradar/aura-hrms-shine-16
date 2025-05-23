@@ -1,0 +1,132 @@
+
+import { ReactNode, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { Menu, User, Bell, LogOut, X } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "@/components/ui/sonner";
+
+interface DashboardLayoutProps {
+  children: ReactNode;
+  sidebar: ReactNode;
+}
+
+export function DashboardLayout({ children, sidebar }: DashboardLayoutProps) {
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    toast.success("Logged out successfully");
+    navigate("/login");
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
+  };
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      {/* Desktop Sidebar */}
+      <div className="hidden md:flex w-64 flex-col fixed inset-y-0 z-20">
+        <div className="flex flex-col flex-grow bg-card border-r h-full overflow-y-auto">
+          {sidebar}
+        </div>
+      </div>
+
+      {/* Mobile Sidebar */}
+      <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
+        <SheetContent side="left" className="p-0 w-64">
+          {sidebar}
+        </SheetContent>
+      </Sheet>
+
+      {/* Main Content */}
+      <div className="flex flex-col flex-1 md:pl-64">
+        {/* Top Navigation */}
+        <header className="sticky top-0 z-10 bg-background border-b">
+          <div className="flex h-16 items-center justify-between px-4 md:px-6">
+            <div className="flex items-center gap-2">
+              <SheetTrigger asChild className="md:hidden">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsMobileSidebarOpen(true)}
+                >
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle Menu</span>
+                </Button>
+              </SheetTrigger>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-accent"></span>
+              </Button>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                    <Avatar>
+                      <AvatarImage src={user?.avatar} />
+                      <AvatarFallback>{user?.name ? getInitials(user.name) : "U"}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex flex-col space-y-1 leading-none">
+                      <p className="font-medium">{user?.name}</p>
+                      <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <button className="w-full flex cursor-pointer items-center" onClick={() => toast.info("Profile not implemented yet")}>
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </button>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <button className="w-full flex cursor-pointer items-center text-destructive" onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Log out
+                    </button>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1">
+          <div className="container max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+export default DashboardLayout;
