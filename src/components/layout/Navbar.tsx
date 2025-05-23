@@ -3,10 +3,14 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
 
   // Handle scroll effect
   useEffect(() => {
@@ -34,6 +38,26 @@ const Navbar = () => {
     setMobileMenuOpen(false);
   };
 
+  const handleGetStarted = () => {
+    if (isAuthenticated && user) {
+      // If authenticated, go to appropriate dashboard
+      switch (user.role) {
+        case 'system_admin':
+          navigate('/system-admin');
+          break;
+        case 'tenant_admin':
+          navigate('/tenant-admin');
+          break;
+        case 'employee':
+          navigate('/ess');
+          break;
+      }
+    } else {
+      // If not authenticated, go to login page
+      navigate('/login');
+    }
+  };
+
   return (
     <header 
       className={`fixed w-full top-0 z-50 transition-all duration-300 ${
@@ -44,10 +68,10 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex-shrink-0 font-bold text-xl">
-            <a href="#" className="flex items-center gap-2">
+            <Link to="/landing" className="flex items-center gap-2">
               <span className="text-accent">Aura</span>
               <span>HRMS</span>
-            </a>
+            </Link>
           </div>
 
           {/* Desktop navigation */}
@@ -62,7 +86,9 @@ const Navbar = () => {
           {/* CTA Button and Theme Toggle */}
           <div className="hidden md:flex items-center gap-4">
             <ThemeToggle />
-            <Button className="btn-accent">Get Started</Button>
+            <Button className="btn-accent" onClick={handleGetStarted}>
+              {isAuthenticated ? 'Dashboard' : 'Get Started'}
+            </Button>
           </div>
 
           {/* Mobile menu button */}
@@ -87,7 +113,9 @@ const Navbar = () => {
           <a href="#docs" onClick={handleNavClick} className="block px-3 py-2 hover:text-accent transition-colors">Docs</a>
           <a href="#blog" onClick={handleNavClick} className="block px-3 py-2 hover:text-accent transition-colors">Blog</a>
           <div className="px-3 py-2">
-            <Button className="btn-accent w-full">Get Started</Button>
+            <Button className="btn-accent w-full" onClick={handleGetStarted}>
+              {isAuthenticated ? 'Dashboard' : 'Get Started'}
+            </Button>
           </div>
         </div>
       </div>
