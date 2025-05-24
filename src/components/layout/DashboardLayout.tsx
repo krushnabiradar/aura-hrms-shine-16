@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
-import { Menu, User, Bell, LogOut, X } from "lucide-react";
+import { Menu, User, LogOut, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import {
   DropdownMenu,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/components/ui/sonner";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -81,10 +82,7 @@ export function DashboardLayout({ children, sidebar }: DashboardLayoutProps) {
             <div className="flex items-center gap-2">
               <ThemeToggle />
               
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-accent"></span>
-              </Button>
+              <NotificationCenter />
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -133,4 +131,3 @@ export function DashboardLayout({ children, sidebar }: DashboardLayoutProps) {
 }
 
 export default DashboardLayout;
-

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Building, Briefcase, Users, Activity, CreditCard, Database, BarChart3 } from "lucide-react";
@@ -11,10 +10,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 
-// Import the new pages
+// Import the existing pages
 import TenantManagementPage from "./TenantManagementPage";
 import UserManagementPage from "./UserManagementPage";
 import BillingSubscriptionPage from "./BillingSubscriptionPage";
+
+// Import the new Phase 4 components
+import { NotificationPreferences } from "@/components/notifications/NotificationPreferences";
+import { ReportBuilder } from "@/components/reports/ReportBuilder";
+import { SystemSettings } from "@/components/settings/SystemSettings";
 
 // Mock data for the main dashboard
 const tenants = [
@@ -54,11 +58,11 @@ const SystemAdminDashboard = () => {
       case "/system-admin/security":
         return <div className="p-8 text-center text-muted-foreground">Security management coming soon...</div>;
       case "/system-admin/analytics":
-        return <div className="p-8 text-center text-muted-foreground">Analytics dashboard coming soon...</div>;
+        return <ReportBuilder />;
       case "/system-admin/logs":
         return <div className="p-8 text-center text-muted-foreground">System logs coming soon...</div>;
       case "/system-admin/settings":
-        return <div className="p-8 text-center text-muted-foreground">System settings coming soon...</div>;
+        return <SystemSettings />;
       case "/system-admin/help":
         return <div className="p-8 text-center text-muted-foreground">Help & support coming soon...</div>;
       default:
