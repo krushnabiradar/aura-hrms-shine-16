@@ -130,10 +130,10 @@ export function SystemSettings() {
         ...prev,
         security: {
           ...prev.security,
-          [parent]: {
-            ...prev.security[parent as keyof SystemConfig['security']],
+          [parent]: parent === 'passwordPolicy' ? {
+            ...prev.security.passwordPolicy,
             [child]: value
-          }
+          } : value
         }
       }));
     } else {
