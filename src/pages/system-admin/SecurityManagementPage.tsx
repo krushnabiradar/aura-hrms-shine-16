@@ -41,7 +41,14 @@ const SecurityManagementPage = () => {
   // Use useEffect to handle data updates instead of onSuccess
   useEffect(() => {
     if (securityData?.data) {
-      setSecuritySettings(securityData.data);
+      setSecuritySettings(prev => ({
+        ...prev,
+        ...securityData.data,
+        passwordPolicy: {
+          ...prev.passwordPolicy,
+          ...securityData.data.passwordPolicy
+        }
+      }));
     }
   }, [securityData]);
 
@@ -74,6 +81,11 @@ const SecurityManagementPage = () => {
   };
 
   const logs = securityLogs?.data || [];
+
+  // Safety check to ensure passwordPolicy exists
+  if (!securitySettings.passwordPolicy) {
+    return <div className="text-center py-8">Loading security settings...</div>;
+  }
 
   return (
     <div className="space-y-6">
