@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Shield, Lock, Users, AlertTriangle, Eye, Settings } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,17 +31,19 @@ const SecurityManagementPage = () => {
   const { data: securityData, isLoading: securityLoading } = useQuery({
     queryKey: ['security-settings'],
     queryFn: () => systemAdminApi.getSecuritySettings(),
-    onSuccess: (data) => {
-      if (data.data) {
-        setSecuritySettings(data.data);
-      }
-    }
   });
 
   const { data: securityLogs, isLoading: logsLoading } = useQuery({
     queryKey: ['security-logs'],
     queryFn: () => systemAdminApi.getSecurityLogs(),
   });
+
+  // Use useEffect to handle data updates instead of onSuccess
+  useEffect(() => {
+    if (securityData?.data) {
+      setSecuritySettings(securityData.data);
+    }
+  }, [securityData]);
 
   const updateSecurityMutation = useMutation({
     mutationFn: systemAdminApi.updateSecuritySettings,
@@ -61,13 +63,13 @@ const SecurityManagementPage = () => {
   const updateSetting = (path: string, value: any) => {
     const keys = path.split('.');
     const newSettings = { ...securitySettings };
-    let current = newSettings;
+    let current: any = newSettings;
     
     for (let i = 0; i < keys.length - 1; i++) {
-      current = current[keys[i] as keyof typeof current] as any;
+      current = current[keys[i]];
     }
     
-    current[keys[keys.length - 1] as keyof typeof current] = value;
+    current[keys[keys.length - 1]] = value;
     setSecuritySettings(newSettings);
   };
 

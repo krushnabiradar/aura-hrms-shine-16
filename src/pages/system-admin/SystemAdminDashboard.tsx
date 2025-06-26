@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Building, Briefcase, Users, Activity, CreditCard, Database, BarChart3 } from "lucide-react";
@@ -149,8 +148,8 @@ const SystemAdminDashboard = () => {
                           <TableCell>
                             <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
                               tenant.status === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                              tenant.status === 'Pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                              'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                              tenant.status === 'Inactive' || tenant.status === 'Suspended' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                              'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                             }`}>
                               {tenant.status}
                             </span>
