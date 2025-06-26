@@ -20,6 +20,7 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   error: string | null;
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,7 +38,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.interceptors.request.use(
+    // Request interceptor to add token
+    const requestInterceptor = api.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem('token');
         if (token && config.headers) {
@@ -48,23 +50,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       (error) => Promise.reject(error)
     );
 
-    api.interceptors.response.use(
+    // Response interceptor to handle token expiration
+    const responseInterceptor = api.interceptors.response.use(
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          localStorage.removeItem('token');
-          setUser(null);
+          const errorCode = error.response?.data?.code;
+          if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'INVALID_TOKEN' || errorCode === 'INVALID_USER') {
+            console.log('Token invalid, logging out user');
+            localStorage.removeItem('token');
+            setUser(null);
+            setError('Session expired. Please login again.');
+          }
         }
         return Promise.reject(error);
       }
     );
 
+    // Check for existing token on app start
     const token = localStorage.getItem('token');
     if (token) {
       fetchUserProfile();
     } else {
       setIsLoading(false);
     }
+
+    // Cleanup interceptors
+    return () => {
+      api.interceptors.request.eject(requestInterceptor);
+      api.interceptors.response.eject(responseInterceptor);
+    };
   }, []);
 
   const fetchUserProfile = async () => {
@@ -72,9 +87,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const response = await api.get('/auth/profile');
       setUser(response.data);
       setError(null);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Profile fetch error:', error);
       localStorage.removeItem('token');
-      setError('Session expired. Please login again.');
+      setUser(null);
+      
+      if (error.response?.data?.code === 'TOKEN_EXPIRED') {
+        setError('Session expired. Please login again.');
+      } else {
+        setError('Failed to load user profile. Please login again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -83,12 +105,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     setError(null);
+    
     try {
       const response = await api.post('/auth/login', { email, password });
       const { token, user } = response.data;
+      
       localStorage.setItem('token', token);
       setUser(user);
+      
+      console.log(`User ${user.email} logged in successfully with role ${user.role}`);
     } catch (error: any) {
+      console.error('Login error:', error);
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
       setError(errorMessage);
       throw new Error(errorMessage);
@@ -101,6 +128,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('token');
     setUser(null);
     setError(null);
+    console.log('User logged out');
+  };
+
+  const clearError = () => {
+    setError(null);
   };
 
   return (
@@ -110,7 +142,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       login,
       logout,
       isAuthenticated: !!user,
-      error
+      error,
+      clearError
     }}>
       {children}
     </AuthContext.Provider>

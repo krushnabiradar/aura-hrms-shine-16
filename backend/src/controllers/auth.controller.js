@@ -1,6 +1,8 @@
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { Op } = require('sequelize');
 const { User } = require('../models');
 const { sendEmail } = require('../utils/email');
 
@@ -11,6 +13,10 @@ const generateToken = (userId) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
 
     const user = await User.findOne({ 
       where: { email, status: 'Active' }
@@ -36,6 +42,7 @@ const login = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ message: 'Login failed. Please try again.' });
   }
 };
@@ -55,14 +62,19 @@ const getProfile = async (req, res) => {
       avatar: user.avatar
     });
   } catch (error) {
+    console.error('Profile error:', error);
     res.status(500).json({ message: 'Error fetching profile' });
   }
 };
 
-// Add these new controller methods
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
     const user = await User.findOne({ where: { email } });
 
     if (!user) {
@@ -96,6 +108,15 @@ const forgotPassword = async (req, res) => {
 const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
+    
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: 'Token and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
+
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
     const user = await User.findOne({
