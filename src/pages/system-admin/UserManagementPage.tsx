@@ -30,16 +30,20 @@ const UserManagementPage = () => {
     status: "Active"
   });
 
-  const { data: users = [], isLoading: usersLoading, error: usersError } = useQuery({
+  const { data: usersData, isLoading: usersLoading, error: usersError } = useQuery({
     queryKey: ['users'],
-    queryFn: systemAdminApi.getUsers,
+    queryFn: () => systemAdminApi.getUsers(),
     refetchInterval: 30000,
   });
 
-  const { data: tenants = [] } = useQuery({
+  const { data: tenantsData } = useQuery({
     queryKey: ['tenants'],
-    queryFn: systemAdminApi.getTenants,
+    queryFn: () => systemAdminApi.getTenants(),
   });
+
+  // Extract arrays from the response data
+  const users = usersData?.users || [];
+  const tenants = tenantsData?.tenants || [];
 
   const createUserMutation = useMutation({
     mutationFn: systemAdminApi.createUser,
