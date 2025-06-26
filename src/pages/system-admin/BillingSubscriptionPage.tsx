@@ -20,22 +20,26 @@ const BillingSubscriptionPage = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState<CreateSubscriptionData>({
     tenantId: "",
-    plan: "Starter",
+    plan: "Basic",
     billingCycle: "Monthly",
-    amount: 49,
+    amount: 29,
     currency: "USD"
   });
 
-  const { data: subscriptions = [], isLoading: subscriptionsLoading, error: subscriptionsError } = useQuery({
+  const { data: subscriptionsData, isLoading: subscriptionsLoading, error: subscriptionsError } = useQuery({
     queryKey: ['subscriptions'],
-    queryFn: systemAdminApi.getSubscriptions,
+    queryFn: () => systemAdminApi.getSubscriptions(),
     refetchInterval: 30000,
   });
 
-  const { data: tenants = [] } = useQuery({
+  const { data: tenantsData } = useQuery({
     queryKey: ['tenants'],
-    queryFn: systemAdminApi.getTenants,
+    queryFn: () => systemAdminApi.getTenants(),
   });
+
+  // Extract arrays from the response data
+  const subscriptions = subscriptionsData?.subscriptions || [];
+  const tenants = tenantsData?.tenants || [];
 
   const createSubscriptionMutation = useMutation({
     mutationFn: systemAdminApi.createSubscription,
@@ -45,9 +49,9 @@ const BillingSubscriptionPage = () => {
       setIsCreateDialogOpen(false);
       setFormData({
         tenantId: "",
-        plan: "Starter",
+        plan: "Basic",
         billingCycle: "Monthly",
-        amount: 49,
+        amount: 29,
         currency: "USD"
       });
     },
@@ -295,7 +299,7 @@ const BillingSubscriptionPage = () => {
                               value={formData.plan}
                               onChange={(e) => handleInputChange('plan', e.target.value)}
                             >
-                              <option value="Starter">Starter</option>
+                              <option value="Basic">Basic</option>
                               <option value="Business">Business</option>
                               <option value="Enterprise">Enterprise</option>
                             </select>
@@ -321,7 +325,7 @@ const BillingSubscriptionPage = () => {
                               type="number" 
                               value={formData.amount}
                               onChange={(e) => handleInputChange('amount', parseFloat(e.target.value) || 0)}
-                              placeholder="49.00" 
+                              placeholder="29.00" 
                             />
                           </div>
                           <div className="space-y-2">
