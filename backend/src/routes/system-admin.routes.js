@@ -5,6 +5,9 @@ const { createUser, getUsers, updateUser, deleteUser } = require('../controllers
 const { getSettings, updateSettings } = require('../controllers/settings.controller');
 const { getSecuritySettings, updateSecuritySettings, getSecurityLogs } = require('../controllers/security.controller');
 const { getSubscriptions, createSubscription, updateSubscription, deleteSubscription } = require('../controllers/billing.controller');
+const { getDashboardStats, getSystemUsage } = require('../controllers/dashboard.controller');
+const { getSystemLogs, getAuditLogs } = require('../controllers/logs.controller');
+const { getNotificationSettings, updateNotificationSettings, getNotifications } = require('../controllers/notifications.controller');
 const auth = require('../middleware/auth');
 const systemAdminAuth = require('../middleware/system-admin-auth');
 
@@ -12,6 +15,10 @@ const router = express.Router();
 
 // Apply system admin authentication middleware to all routes
 router.use(auth, systemAdminAuth);
+
+// Dashboard routes
+router.get('/dashboard/stats', getDashboardStats);
+router.get('/dashboard/usage', getSystemUsage);
 
 // Tenant routes
 router.post('/tenants', createTenant);
@@ -32,6 +39,15 @@ router.put('/settings', updateSettings);
 router.get('/security/settings', getSecuritySettings);
 router.put('/security/settings', updateSecuritySettings);
 router.get('/security/logs', getSecurityLogs);
+
+// System logs routes
+router.get('/logs', getSystemLogs);
+router.get('/logs/audit', getAuditLogs);
+
+// Notification routes
+router.get('/notifications/settings', getNotificationSettings);
+router.put('/notifications/settings', updateNotificationSettings);
+router.get('/notifications', getNotifications);
 
 // Billing/Subscription routes
 router.get('/subscriptions', getSubscriptions);

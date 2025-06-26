@@ -1,4 +1,3 @@
-
 import { api } from '@/lib/axios';
 import { AxiosResponse } from 'axios';
 
@@ -182,7 +181,157 @@ export const validateSubscriptionData = (data: CreateSubscriptionData): string[]
   return errors;
 };
 
+export interface DashboardStats {
+  totalTenants: number;
+  activeSubscriptions: number;
+  totalUsers: number;
+  systemHealth: number;
+  trends: {
+    tenantGrowth: number;
+    userGrowth: number;
+    subscriptionGrowth: number;
+  };
+}
+
+export interface SystemUsage {
+  date: string;
+  cpu: number;
+  memory: number;
+  storage: number;
+}
+
+export interface SystemLog {
+  id: number;
+  timestamp: string;
+  level: 'INFO' | 'WARNING' | 'ERROR';
+  action: string;
+  message: string;
+  userId?: string;
+  userEmail?: string;
+  ipAddress: string;
+  userAgent: string;
+}
+
+export interface NotificationSettings {
+  email: {
+    enabled: boolean;
+    newTenant: boolean;
+    userRegistration: boolean;
+    paymentFailed: boolean;
+    systemAlerts: boolean;
+  };
+  sms: {
+    enabled: boolean;
+    criticalAlerts: boolean;
+  };
+  push: {
+    enabled: boolean;
+    dashboardAlerts: boolean;
+    securityAlerts: boolean;
+  };
+}
+
 export const systemAdminApi = {
+  // Dashboard Management
+  getDashboardStats: async (): Promise<DashboardStats> => {
+    const response = await api.get('/api/system-admin/dashboard/stats');
+    return response.data;
+  },
+
+  getSystemUsage: async (): Promise<SystemUsage[]> => {
+    const response = await api.get('/api/system-admin/dashboard/usage');
+    return response.data;
+  },
+
+  // System Logs
+  getSystemLogs: async (params?: {
+    page?: number;
+    limit?: number;
+    level?: string;
+    action?: string;
+    startDate?: string;  
+    endDate?: string;
+  }): Promise<{
+    logs: SystemLog[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+    };
+  }> => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.level) searchParams.append('level', params.level);
+    if (params?.action) searchParams.append('action', params.action);
+    if (params?.startDate) searchParams.append('startDate', params.startDate);
+    if (params?.endDate) searchParams.append('endDate', params.endDate);
+
+    const response = await api.get(`/api/system-admin/logs?${searchParams.toString()}`);
+    return response.data;
+  },
+
+  getAuditLogs: async (params?: {
+    page?: number;
+    limit?: number;
+    userId?: string;
+    tenantId?: string;
+    action?: string;
+  }): Promise<{
+    logs: any[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+    };
+  }> => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.userId) searchParams.append('userId', params.userId);
+    if (params?.tenantId) searchParams.append('tenantId', params.tenantId);
+    if (params?.action) searchParams.append('action', params.action);
+
+    const response = await api.get(`/api/system-admin/logs/audit?${searchParams.toString()}`);
+    return response.data;
+  },
+
+  // Notification Management
+  getNotificationSettings: async (): Promise<NotificationSettings> => {
+    const response = await api.get('/api/system-admin/notifications/settings');
+    return response.data;
+  },
+
+  updateNotificationSettings: async (data: NotificationSettings): Promise<NotificationSettings> => {
+    const response = await api.put('/api/system-admin/notifications/settings', data);
+    return response.data;
+  },
+
+  getNotifications: async (params?: {
+    page?: number;
+    limit?: number;
+    unreadOnly?: boolean;
+  }): Promise<{
+    notifications: any[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+    };
+    unreadCount: number;
+  }> => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.unreadOnly) searchParams.append('unreadOnly', params.unreadOnly.toString());
+
+    const response = await api.get(`/api/system-admin/notifications?${searchParams.toString()}`);
+    return response.data;
+  },
+
   // Tenant Management
   getTenants: async (params?: { page?: number; limit?: number; search?: string; status?: string }): Promise<{
     tenants: Tenant[];

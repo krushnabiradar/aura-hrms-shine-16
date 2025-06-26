@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Building, Briefcase, Users, Activity, CreditCard, Database, BarChart3 } from "lucide-react";
@@ -9,6 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
+import { useQuery } from "@tanstack/react-query";
+import { systemAdminApi } from "@/services/api/system-admin";
 
 // Import the existing pages
 import TenantManagementPage from "./TenantManagementPage";
@@ -20,27 +23,27 @@ import { NotificationPreferences } from "@/components/notifications/Notification
 import { ReportBuilder } from "@/components/reports/ReportBuilder";
 import { SystemSettings } from "@/components/settings/SystemSettings";
 
-// Mock data for the main dashboard
-const tenants = [
-  { id: 1, name: "Acme Corporation", employees: 245, status: "Active", plan: "Enterprise", lastBilling: "2023-05-10" },
-  { id: 2, name: "Globex Industries", employees: 112, status: "Active", plan: "Business", lastBilling: "2023-05-05" },
-  { id: 3, name: "Stark Innovations", employees: 89, status: "Active", plan: "Business", lastBilling: "2023-05-01" },
-  { id: 4, name: "Wayne Enterprises", employees: 320, status: "Active", plan: "Enterprise", lastBilling: "2023-04-28" },
-  { id: 5, name: "Umbrella Corp", employees: 0, status: "Pending", plan: "Trial", lastBilling: "-" },
-];
+// Import new pages
+import SecurityManagementPage from "./SecurityManagementPage";
+import SystemLogsPage from "./SystemLogsPage";
 
 const SystemAdminDashboard = () => {
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(true);
   
-  // Simulating data loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, []);
+  // Fetch real dashboard statistics
+  const { data: dashboardStats, isLoading: statsLoading } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: () => systemAdminApi.getDashboardStats(),
+    refetchInterval: 30000,
+  });
+
+  // Fetch recent tenants for the table
+  const { data: tenantsData, isLoading: tenantsLoading } = useQuery({
+    queryKey: ['recent-tenants'],
+    queryFn: () => systemAdminApi.getTenants({ limit: 5 }),
+  });
+
+  const tenants = tenantsData?.tenants || [];
 
   const handleAddTenant = () => {
     toast.info("Add tenant functionality not implemented yet");
@@ -56,11 +59,11 @@ const SystemAdminDashboard = () => {
       case "/system-admin/billing":
         return <BillingSubscriptionPage />;
       case "/system-admin/security":
-        return <div className="p-8 text-center text-muted-foreground">Security management coming soon...</div>;
+        return <SecurityManagementPage />;
       case "/system-admin/analytics":
         return <ReportBuilder />;
       case "/system-admin/logs":
-        return <div className="p-8 text-center text-muted-foreground">System logs coming soon...</div>;
+        return <SystemLogsPage />;
       case "/system-admin/settings":
         return <SystemSettings />;
       case "/system-admin/help":
@@ -76,28 +79,28 @@ const SystemAdminDashboard = () => {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <DashboardCard
                 title="Total Tenants"
-                value={isLoading ? "Loading..." : "15"}
+                value={statsLoading ? "Loading..." : dashboardStats?.totalTenants?.toString() || "0"}
                 icon={Building}
-                trend={12.5}
+                trend={dashboardStats?.trends?.tenantGrowth}
                 trendLabel="from last month"
               />
               <DashboardCard
                 title="Active Subscriptions"
-                value={isLoading ? "Loading..." : "12"}
+                value={statsLoading ? "Loading..." : dashboardStats?.activeSubscriptions?.toString() || "0"}
                 icon={CreditCard}
-                trend={8.2}
+                trend={dashboardStats?.trends?.subscriptionGrowth}
                 trendLabel="from last month"
               />
               <DashboardCard
                 title="Total Users"
-                value={isLoading ? "Loading..." : "1,249"}
+                value={statsLoading ? "Loading..." : dashboardStats?.totalUsers?.toString() || "0"}
                 icon={Users}
-                trend={24.5}
+                trend={dashboardStats?.trends?.userGrowth}
                 trendLabel="from last month"
               />
               <DashboardCard
                 title="System Health"
-                value={isLoading ? "Loading..." : "98%"}
+                value={statsLoading ? "Loading..." : `${dashboardStats?.systemHealth || 0}%`}
                 icon={Activity}
                 description="All systems operational"
               />
@@ -106,9 +109,9 @@ const SystemAdminDashboard = () => {
             <Card className="col-span-3">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle>Tenant Management</CardTitle>
+                  <CardTitle>Recent Tenants</CardTitle>
                   <CardDescription>
-                    Manage all tenant organizations in the system.
+                    Recently registered tenant organizations.
                   </CardDescription>
                 </div>
                 <Button onClick={handleAddTenant}>Add Tenant</Button>
@@ -121,22 +124,28 @@ const SystemAdminDashboard = () => {
                       <TableHead>Employees</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Plan</TableHead>
-                      <TableHead>Last Billing</TableHead>
+                      <TableHead>Created</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {isLoading ? (
+                    {tenantsLoading ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center">
                           Loading tenant data...
+                        </TableCell>
+                      </TableRow>
+                    ) : tenants.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          No tenants found
                         </TableCell>
                       </TableRow>
                     ) : (
                       tenants.map((tenant) => (
                         <TableRow key={tenant.id}>
                           <TableCell className="font-medium">{tenant.name}</TableCell>
-                          <TableCell>{tenant.employees}</TableCell>
+                          <TableCell>{tenant.employees || 0}</TableCell>
                           <TableCell>
                             <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
                               tenant.status === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
@@ -147,7 +156,7 @@ const SystemAdminDashboard = () => {
                             </span>
                           </TableCell>
                           <TableCell>{tenant.plan}</TableCell>
-                          <TableCell>{tenant.lastBilling}</TableCell>
+                          <TableCell>{tenant.createdDate}</TableCell>
                           <TableCell className="text-right">
                             <Button variant="ghost" size="sm" onClick={() => toast.info(`View ${tenant.name} details`)}>
                               View

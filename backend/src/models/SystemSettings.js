@@ -1,3 +1,4 @@
+
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -67,6 +68,27 @@ SystemSettings.init({
       retentionPeriod: 30,
       maintenanceMode: false,
       debugMode: false
+    }
+  },
+  notifications: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      email: {
+        enabled: true,
+        newTenant: true,
+        userRegistration: true,
+        paymentFailed: true,
+        systemAlerts: true
+      },
+      sms: {
+        enabled: false,
+        criticalAlerts: false
+      },
+      push: {
+        enabled: true,
+        dashboardAlerts: true,
+        securityAlerts: true
+      }
     }
   }
 }, {
