@@ -1,9 +1,10 @@
+
 const express = require('express');
 const { createTenant, getTenants, updateTenant } = require('../controllers/tenant.controller');
-const { createUser, getUsers, updateUser } = require('../controllers/user.controller');
+const { createUser, getUsers, updateUser, deleteUser } = require('../controllers/user.controller');
 const { getSettings, updateSettings } = require('../controllers/settings.controller');
 const { getSecuritySettings, updateSecuritySettings, getSecurityLogs } = require('../controllers/security.controller');
-const { getSubscriptions, updateSubscription } = require('../controllers/billing.controller');
+const { getSubscriptions, createSubscription, updateSubscription, deleteSubscription } = require('../controllers/billing.controller');
 const auth = require('../middleware/auth');
 const systemAdminAuth = require('../middleware/system-admin-auth');
 
@@ -21,6 +22,7 @@ router.put('/tenants/:id', updateTenant);
 router.post('/users', createUser);
 router.get('/users', getUsers);
 router.put('/users/:id', updateUser);
+router.delete('/users/:id', deleteUser);
 
 // Settings routes
 router.get('/settings', getSettings);
@@ -31,8 +33,10 @@ router.get('/security/settings', getSecuritySettings);
 router.put('/security/settings', updateSecuritySettings);
 router.get('/security/logs', getSecurityLogs);
 
-// Billing routes
+// Billing/Subscription routes
 router.get('/subscriptions', getSubscriptions);
+router.post('/subscriptions', createSubscription);
 router.put('/subscriptions/:id', updateSubscription);
+router.delete('/subscriptions/:id', deleteSubscription);
 
 module.exports = router;
