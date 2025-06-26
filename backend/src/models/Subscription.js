@@ -1,3 +1,4 @@
+
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -19,7 +20,8 @@ Subscription.init({
   },
   plan: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: false,
+    defaultValue: 'Basic'
   },
   status: {
     type: DataTypes.ENUM('Active', 'Inactive', 'Cancelled', 'Past_Due'),
@@ -27,7 +29,8 @@ Subscription.init({
   },
   startDate: {
     type: DataTypes.DATE,
-    allowNull: false
+    allowNull: false,
+    defaultValue: DataTypes.NOW
   },
   endDate: {
     type: DataTypes.DATE,
@@ -36,6 +39,14 @@ Subscription.init({
   billingCycle: {
     type: DataTypes.ENUM('Monthly', 'Yearly'),
     defaultValue: 'Monthly'
+  },
+  amount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true
+  },
+  currency: {
+    type: DataTypes.STRING,
+    defaultValue: 'USD'
   }
 }, {
   sequelize,

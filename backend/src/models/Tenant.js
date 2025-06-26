@@ -1,3 +1,4 @@
+
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -18,13 +19,36 @@ Tenant.init({
     allowNull: false,
     unique: true
   },
+  adminEmail: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      isEmail: true
+    }
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  maxUsers: {
+    type: DataTypes.INTEGER,
+    defaultValue: 10
+  },
+  storage: {
+    type: DataTypes.STRING,
+    defaultValue: '1GB'
+  },
   status: {
     type: DataTypes.ENUM('Active', 'Inactive', 'Suspended'),
     defaultValue: 'Active'
   },
   settings: {
     type: DataTypes.JSONB,
-    defaultValue: {}
+    defaultValue: {
+      autoActivation: true,
+      emailNotifications: true,
+      trialPeriod: true
+    }
   }
 }, {
   sequelize,

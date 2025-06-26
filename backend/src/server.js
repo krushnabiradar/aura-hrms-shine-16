@@ -1,3 +1,4 @@
+
 const app = require('./app');
 const sequelize = require('./config/database');
 
@@ -8,7 +9,8 @@ async function startServer() {
     await sequelize.authenticate();
     console.log('Database connection established successfully.');
     
-    // Force sync all models - this will drop and recreate tables
+    // Use alter: true to automatically update existing tables with new columns
+    // This is safer than force: true as it doesn't drop existing data
     await sequelize.sync({ alter: true });
     console.log('Database synchronized successfully.');
     
