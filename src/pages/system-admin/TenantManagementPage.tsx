@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Building, Plus, Settings, Users, CreditCard, Shield, Eye, MoreHorizontal } from "lucide-react";
+import { Building, Plus, Settings, Users, CreditCard, Shield, Eye, MoreHorizontal, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,20 +13,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "@/components/ui/sonner";
 import { Skeleton } from "@/components/ui/skeleton";
-import { systemAdminApi, type Tenant, type CreateTenantData } from "@/services/api/system-admin";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { systemAdminApi, type Tenant, type CreateTenantData, validateTenantData } from "@/services/api/system-admin";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const TenantManagementPage = () => {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [formData, setFormData] = useState<CreateTenantData>({
     name: "",
     domain: "",
     adminEmail: "",
     adminName: "",
     description: "",
-    plan: "Starter",
+    plan: "Basic",
     maxUsers: 100,
     storage: "10GB",
     billingCycle: "Monthly",
@@ -35,59 +37,116 @@ const TenantManagementPage = () => {
     trialPeriod: false
   });
 
-  const { data: tenants = [], isLoading, error } = useQuery({
-    queryKey: ['tenants'],
-    queryFn: systemAdminApi.getTenants,
-    refetchInterval: 30000, // Refetch every 30 seconds
+  const { data: tenantsResponse, isLoading, error } = useQuery({
+    queryKey: ['tenants', searchTerm],
+    queryFn: () => systemAdminApi.getTenants({ 
+      search: searchTerm || undefined,
+      limit: 50 
+    }),
+    refetchInterval: 30000,
   });
+
+  const tenants = tenantsResponse?.tenants || [];
+  const pagination = tenantsResponse?.pagination;
 
   const createTenantMutation = useMutation({
     mutationFn: systemAdminApi.createTenant,
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
-      toast.success('Tenant created successfully');
-      setIsCreateDialogOpen(false);
-      setFormData({
-        name: "",
-        domain: "",
-        adminEmail: "",
-        adminName: "",
-        description: "",
-        plan: "Starter",
-        maxUsers: 100,
-        storage: "10GB",
-        billingCycle: "Monthly",
-        autoActivation: true,
-        emailNotifications: true,
-        trialPeriod: false
+      toast.success('Tenant created successfully', {
+        description: `${response.tenant.name} has been created with admin user ${response.adminUser.email}`
       });
+      setIsCreateDialogOpen(false);
+      setValidationErrors([]);
+      resetForm();
+      
+      // Show temporary password info
+      if (response.adminUser.tempPassword) {
+        toast.info('Admin Login Details', {
+          description: `Temporary password: ${response.adminUser.tempPassword}`,
+          duration: 10000
+        });
+      }
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create tenant');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create tenant';
+      const errors = error.response?.data?.errors || [];
+      
+      if (errors.length > 0) {
+        setValidationErrors(errors);
+      } else {
+        toast.error(errorMessage);
+      }
     }
   });
 
+  const deleteTenantMutation = useMutation({
+    mutationFn: systemAdminApi.deleteTenant,
+    onSuccess: (_, tenantId) => {
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
+      const deletedTenant = tenants.find(t => t.id === tenantId);
+      toast.success('Tenant deleted successfully', {
+        description: `${deletedTenant?.name || 'Tenant'} has been permanently deleted`
+      });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete tenant');
+    }
+  });
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      domain: "",
+      adminEmail: "",
+      adminName: "",
+      description: "",
+      plan: "Basic",
+      maxUsers: 100,
+      storage: "10GB",
+      billingCycle: "Monthly",
+      autoActivation: true,
+      emailNotifications: true,
+      trialPeriod: false
+    });
+    setValidationErrors([]);
+  };
+
   const handleCreateTenant = () => {
-    if (!formData.name || !formData.domain || !formData.adminEmail || !formData.adminName) {
-      toast.error('Please fill in all required fields');
+    // Client-side validation
+    const errors = validateTenantData(formData);
+    if (errors.length > 0) {
+      setValidationErrors(errors);
       return;
     }
     
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.adminEmail)) {
-      toast.error('Please enter a valid email address');
-      return;
-    }
-
+    setValidationErrors([]);
     createTenantMutation.mutate(formData);
   };
 
-  const handleTenantAction = (action: string, tenantName: string) => {
-    toast.info(`${action} for ${tenantName} executed`);
+  const handleDeleteTenant = (tenant: Tenant) => {
+    if (window.confirm(`Are you sure you want to delete "${tenant.name}"? This action cannot be undone and will remove all associated data.`)) {
+      deleteTenantMutation.mutate(tenant.id);
+    }
+  };
+
+  const handleTenantAction = (action: string, tenant: Tenant) => {
+    switch (action) {
+      case 'delete':
+        handleDeleteTenant(tenant);
+        break;
+      default:
+        toast.info(`${action} for ${tenant.name} executed`);
+    }
   };
 
   const handleInputChange = (field: keyof CreateTenantData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear validation errors when user starts typing
+    if (validationErrors.length > 0) {
+      setValidationErrors([]);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -105,7 +164,8 @@ const TenantManagementPage = () => {
 
   const filteredTenants = tenants.filter(tenant =>
     tenant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tenant.domain.toLowerCase().includes(searchTerm.toLowerCase())
+    tenant.domain.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    tenant.adminEmail.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (error) {
@@ -140,7 +200,7 @@ const TenantManagementPage = () => {
             {isLoading ? (
               <Skeleton className="h-8 w-16" />
             ) : (
-              <div className="text-2xl font-bold">{tenants.length}</div>
+              <div className="text-2xl font-bold">{pagination?.totalItems || tenants.length}</div>
             )}
           </CardContent>
         </Card>
@@ -216,11 +276,24 @@ const TenantManagementPage = () => {
                 Create New Tenant
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Tenant</DialogTitle>
                 <DialogDescription>Set up a new tenant organization in the system</DialogDescription>
               </DialogHeader>
+              
+              {validationErrors.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    <ul className="list-disc list-inside">
+                      {validationErrors.map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <Tabs defaultValue="basic" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="basic">Basic Info</TabsTrigger>
@@ -235,7 +308,8 @@ const TenantManagementPage = () => {
                         id="tenantName" 
                         value={formData.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
-                        placeholder="Enter organization name" 
+                        placeholder="Enter organization name"
+                        required
                       />
                     </div>
                     <div className="space-y-2">
@@ -244,7 +318,8 @@ const TenantManagementPage = () => {
                         id="domain" 
                         value={formData.domain}
                         onChange={(e) => handleInputChange('domain', e.target.value)}
-                        placeholder="company.com" 
+                        placeholder="company.com"
+                        required
                       />
                     </div>
                   </div>
@@ -254,7 +329,8 @@ const TenantManagementPage = () => {
                       id="adminName" 
                       value={formData.adminName}
                       onChange={(e) => handleInputChange('adminName', e.target.value)}
-                      placeholder="Enter admin name" 
+                      placeholder="Enter admin name"
+                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -264,7 +340,8 @@ const TenantManagementPage = () => {
                       type="email" 
                       value={formData.adminEmail}
                       onChange={(e) => handleInputChange('adminEmail', e.target.value)}
-                      placeholder="admin@company.com" 
+                      placeholder="admin@company.com"
+                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -286,7 +363,7 @@ const TenantManagementPage = () => {
                         value={formData.plan}
                         onChange={(e) => handleInputChange('plan', e.target.value)}
                       >
-                        <option value="Starter">Starter</option>
+                        <option value="Basic">Basic</option>
                         <option value="Business">Business</option>
                         <option value="Enterprise">Enterprise</option>
                       </select>
@@ -298,7 +375,9 @@ const TenantManagementPage = () => {
                         type="number" 
                         value={formData.maxUsers}
                         onChange={(e) => handleInputChange('maxUsers', parseInt(e.target.value) || 0)}
-                        placeholder="100" 
+                        placeholder="100"
+                        min="1"
+                        max="10000"
                       />
                     </div>
                   </div>
@@ -360,7 +439,12 @@ const TenantManagementPage = () => {
                 </TabsContent>
               </Tabs>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => {
+                  setIsCreateDialogOpen(false);
+                  resetForm();
+                }}>
+                  Cancel
+                </Button>
                 <Button 
                   onClick={handleCreateTenant}
                   disabled={createTenantMutation.isPending}
@@ -430,17 +514,24 @@ const TenantManagementPage = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleTenantAction("View Details", tenant.name)}>
+                          <DropdownMenuItem onClick={() => handleTenantAction("View Details", tenant)}>
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleTenantAction("Configure", tenant.name)}>
+                          <DropdownMenuItem onClick={() => handleTenantAction("Configure", tenant)}>
                             <Settings className="mr-2 h-4 w-4" />
                             Configure
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleTenantAction("Billing", tenant.name)}>
+                          <DropdownMenuItem onClick={() => handleTenantAction("Billing", tenant)}>
                             <CreditCard className="mr-2 h-4 w-4" />
                             Billing
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleTenantAction("delete", tenant)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
