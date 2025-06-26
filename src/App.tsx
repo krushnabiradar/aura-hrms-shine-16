@@ -16,6 +16,8 @@ import Login from "./pages/Login";
 import SystemAdminDashboard from "./pages/system-admin/SystemAdminDashboard";
 import TenantAdminDashboard from "./pages/tenant-admin/TenantAdminDashboard";
 import EmployeeDashboard from "./pages/ess/EmployeeDashboard";
+import ResetPassword from '@/pages/ResetPassword';
+import ForgotPassword from '@/pages/ForgotPassword';
 
 const queryClient = new QueryClient();
 
@@ -31,6 +33,8 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/landing" element={<Landing />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               
               {/* System Admin Routes */}
               <Route element={<ProtectedRoute allowedRoles={["system_admin"]} />}>
