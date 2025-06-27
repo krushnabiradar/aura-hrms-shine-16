@@ -66,7 +66,9 @@ const HelpSupportPage = () => {
     }
   });
 
-  const handleCreateTicket = (formData: FormData) => {
+  const handleCreateTicket = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
     const priority = formData.get('priority') as string;
@@ -80,7 +82,9 @@ const HelpSupportPage = () => {
     });
   };
 
-  const handleCreateArticle = (formData: FormData) => {
+  const handleCreateArticle = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
     const title = formData.get('title') as string;
     const content = formData.get('content') as string;
     const category = formData.get('category') as string;
@@ -179,7 +183,7 @@ const HelpSupportPage = () => {
                       Create a new support ticket for tracking issues
                     </DialogDescription>
                   </DialogHeader>
-                  <form action={handleCreateTicket} className="space-y-4">
+                  <form onSubmit={handleCreateTicket} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="title">Title</Label>
                       <Input id="title" name="title" placeholder="Brief description of the issue" required />
@@ -332,7 +336,7 @@ const HelpSupportPage = () => {
                         Create a new help article for the knowledge base
                       </DialogDescription>
                     </DialogHeader>
-                    <form action={handleCreateArticle} className="space-y-4">
+                    <form onSubmit={handleCreateArticle} className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="title">Title</Label>
                         <Input id="title" name="title" placeholder="Article title" required />
