@@ -231,6 +231,102 @@ export interface NotificationSettings {
   };
 }
 
+export interface SystemMetrics {
+  system: {
+    health: number;
+    uptime: string;
+    lastUpdated: string;
+  };
+  tenants: {
+    total: number;
+    active: number;
+    newToday: number;
+    growthRate: string;
+  };
+  users: {
+    total: number;
+    active: number;
+    newToday: number;
+    activeRate: string;
+  };
+  security: {
+    failedLogins: number;
+    activeSessions: number;
+    twoFactorEnabled: number;
+  };
+  resources: {
+    cpu: number;
+    memory: number;
+    storage: number;
+    network: number;
+  };
+  database: {
+    connections: number;
+    queryTime: number;
+    cacheHitRatio: number;
+  };
+}
+
+export interface PerformanceData {
+  timeRange: string;
+  dataPoints: Array<{
+    timestamp: string;
+    cpu: number;
+    memory: number;
+    storage: number;
+    network: number;
+    responseTime: number;
+    throughput: number;
+  }>;
+  summary: {
+    avgCpu: number;
+    avgMemory: number;
+    avgResponseTime: number;
+    avgThroughput: number;
+  };
+}
+
+export interface SystemAlert {
+  id: number;
+  type: 'info' | 'warning' | 'error';
+  title: string;
+  message: string;
+  timestamp: string;
+  resolved: boolean;
+}
+
+export interface SupportTicket {
+  id: number;
+  title: string;
+  description: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  category: string;
+  createdBy: string;
+  assignedTo: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KnowledgeArticle {
+  id: number;
+  title: string;
+  content: string;
+  category: string;
+  tags: string[];
+  views: number;
+  helpful: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReportType {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+}
+
 export const systemAdminApi = {
   // Dashboard Management
   getDashboardStats: async (): Promise<DashboardStats> => {
@@ -521,5 +617,126 @@ export const systemAdminApi = {
   // Security
   getSecuritySettings: () => api.get('/api/system-admin/security/settings'),
   updateSecuritySettings: (data: any) => api.put('/api/system-admin/security/settings', data),
-  getSecurityLogs: () => api.get('/api/system-admin/security/logs')
+  getSecurityLogs: () => api.get('/api/system-admin/security/logs'),
+  
+  // Reports
+  getAvailableReports: async (): Promise<ReportType[]> => {
+    const response = await api.get('/api/system-admin/reports/available');
+    return response.data;
+  },
+
+  generateReport: async (data: {
+    reportType: string;
+    dateRange?: { start: Date; end: Date };
+    format?: 'json' | 'csv';
+  }): Promise<any> => {
+    const response = await api.post('/api/system-admin/reports/generate', data);
+    return response.data;
+  },
+
+  // Monitoring
+  getSystemMetrics: async (): Promise<SystemMetrics> => {
+    const response = await api.get('/api/system-admin/monitoring/metrics');
+    return response.data;
+  },
+
+  getPerformanceMetrics: async (timeRange: string = '24h'): Promise<PerformanceData> => {
+    const response = await api.get(`/api/system-admin/monitoring/performance?timeRange=${timeRange}`);
+    return response.data;
+  },
+
+  getSystemAlerts: async (): Promise<SystemAlert[]> => {
+    const response = await api.get('/api/system-admin/monitoring/alerts');
+    return response.data;
+  },
+
+  // Support
+  getSupportTickets: async (params?: {
+    status?: string;
+    priority?: string;
+    category?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    tickets: SupportTicket[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+    };
+  }> => {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.priority) searchParams.append('priority', params.priority);
+    if (params?.category) searchParams.append('category', params.category);
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+
+    const response = await api.get(`/api/system-admin/support/tickets?${searchParams.toString()}`);
+    return response.data;
+  },
+
+  createSupportTicket: async (data: {
+    title: string;
+    description: string;
+    priority?: string;
+    category?: string;
+  }): Promise<SupportTicket> => {
+    const response = await api.post('/api/system-admin/support/tickets', data);
+    return response.data;
+  },
+
+  updateSupportTicket: async (id: number, data: Partial<SupportTicket>): Promise<SupportTicket> => {
+    const response = await api.put(`/api/system-admin/support/tickets/${id}`, data);
+    return response.data;
+  },
+
+  getKnowledgeBase: async (params?: {
+    category?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    articles: KnowledgeArticle[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+    };
+  }> => {
+    const searchParams = new URLSearchParams();
+    if (params?.category) searchParams.append('category', params.category);
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+
+    const response = await api.get(`/api/system-admin/support/knowledge-base?${searchParams.toString()}`);
+    return response.data;
+  },
+
+  createKnowledgeArticle: async (data: {
+    title: string;
+    content: string;
+    category: string;
+    tags?: string[];
+  }): Promise<KnowledgeArticle> => {
+    const response = await api.post('/api/system-admin/support/knowledge-base', data);
+    return response.data;
+  },
+
+  getSupportStats: async (): Promise<{
+    totalTickets: number;
+    openTickets: number;
+    inProgressTickets: number;
+    resolvedTickets: number;
+    highPriorityTickets: number;
+    avgResolutionTime: string;
+    knowledgeBaseArticles: number;
+    totalViews: number;
+  }> => {
+    const response = await api.get('/api/system-admin/support/stats');
+    return response.data;
+  }
 };

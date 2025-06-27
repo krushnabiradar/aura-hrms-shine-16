@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Building, Briefcase, Users, Activity, CreditCard, Database, BarChart3 } from "lucide-react";
@@ -25,6 +26,7 @@ import { SystemSettings } from "@/components/settings/SystemSettings";
 // Import new pages
 import SecurityManagementPage from "./SecurityManagementPage";
 import SystemLogsPage from "./SystemLogsPage";
+import HelpSupportPage from "./HelpSupportPage";
 
 const SystemAdminDashboard = () => {
   const location = useLocation();
@@ -66,7 +68,7 @@ const SystemAdminDashboard = () => {
       case "/system-admin/settings":
         return <SystemSettings />;
       case "/system-admin/help":
-        return <div className="p-8 text-center text-muted-foreground">Help & support coming soon...</div>;
+        return <HelpSupportPage />;
       default:
         return (
           <div className="space-y-8">

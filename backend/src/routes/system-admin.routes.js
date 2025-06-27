@@ -8,6 +8,9 @@ const { getSubscriptions, createSubscription, updateSubscription, deleteSubscrip
 const { getDashboardStats, getSystemUsage } = require('../controllers/dashboard.controller');
 const { getSystemLogs, getAuditLogs } = require('../controllers/logs.controller');
 const { getNotificationSettings, updateNotificationSettings, getNotifications } = require('../controllers/notifications.controller');
+const { generateSystemReport, getAvailableReports } = require('../controllers/reports.controller');
+const { getSystemMetrics, getPerformanceMetrics, getSystemAlerts } = require('../controllers/monitoring.controller');
+const { getSupportTickets, createSupportTicket, updateSupportTicket, getKnowledgeBase, createKnowledgeArticle, getSupportStats } = require('../controllers/support.controller');
 const auth = require('../middleware/auth');
 const systemAdminAuth = require('../middleware/system-admin-auth');
 
@@ -54,5 +57,22 @@ router.get('/subscriptions', getSubscriptions);
 router.post('/subscriptions', createSubscription);
 router.put('/subscriptions/:id', updateSubscription);
 router.delete('/subscriptions/:id', deleteSubscription);
+
+// Reports routes
+router.get('/reports/available', getAvailableReports);
+router.post('/reports/generate', generateSystemReport);
+
+// Monitoring routes
+router.get('/monitoring/metrics', getSystemMetrics);
+router.get('/monitoring/performance', getPerformanceMetrics);
+router.get('/monitoring/alerts', getSystemAlerts);
+
+// Support routes
+router.get('/support/tickets', getSupportTickets);
+router.post('/support/tickets', createSupportTicket);
+router.put('/support/tickets/:id', updateSupportTicket);
+router.get('/support/knowledge-base', getKnowledgeBase);
+router.post('/support/knowledge-base', createKnowledgeArticle);
+router.get('/support/stats', getSupportStats);
 
 module.exports = router;
