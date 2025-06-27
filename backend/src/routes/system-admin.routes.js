@@ -2,17 +2,18 @@
 const express = require('express');
 const { createTenant, getTenants, updateTenant } = require('../controllers/tenant.controller');
 const { createUser, getUsers, updateUser, deleteUser } = require('../controllers/user.controller');
-const { getSettings, updateSettings } = require('../controllers/settings.controller');
+const { getSettings, updateSettings, uploadLogo, testEmailConfig } = require('../controllers/settings.controller');
 const { getSecuritySettings, updateSecuritySettings, getSecurityLogs } = require('../controllers/security.controller');
 const { getSubscriptions, createSubscription, updateSubscription, deleteSubscription } = require('../controllers/billing.controller');
 const { getDashboardStats, getSystemUsage } = require('../controllers/dashboard.controller');
 const { getSystemLogs, getAuditLogs } = require('../controllers/logs.controller');
 const { getNotificationSettings, updateNotificationSettings, getNotifications } = require('../controllers/notifications.controller');
-const { generateSystemReport, getAvailableReports } = require('../controllers/reports.controller');
+const { generateSystemReport, getAvailableReports, scheduleReport } = require('../controllers/reports.controller');
 const { getSystemMetrics, getPerformanceMetrics, getSystemAlerts } = require('../controllers/monitoring.controller');
 const { getSupportTickets, createSupportTicket, updateSupportTicket, getKnowledgeBase, createKnowledgeArticle, getSupportStats } = require('../controllers/support.controller');
 const auth = require('../middleware/auth');
 const systemAdminAuth = require('../middleware/system-admin-auth');
+const { upload } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -37,6 +38,8 @@ router.delete('/users/:id', deleteUser);
 // Settings routes
 router.get('/settings', getSettings);
 router.put('/settings', updateSettings);
+router.post('/settings/upload-logo', upload.single('logo'), uploadLogo);
+router.post('/settings/test-email', testEmailConfig);
 
 // Security routes
 router.get('/security/settings', getSecuritySettings);
@@ -61,6 +64,7 @@ router.delete('/subscriptions/:id', deleteSubscription);
 // Reports routes
 router.get('/reports/available', getAvailableReports);
 router.post('/reports/generate', generateSystemReport);
+router.post('/reports/schedule', scheduleReport);
 
 // Monitoring routes
 router.get('/monitoring/metrics', getSystemMetrics);

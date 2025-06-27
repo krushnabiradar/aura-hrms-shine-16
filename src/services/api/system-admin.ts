@@ -611,15 +611,41 @@ export const systemAdminApi = {
   },
   
   // Settings
-  getSettings: () => api.get('/api/system-admin/settings'),
-  updateSettings: (data: any) => api.put('/api/system-admin/settings', data),
-  
-  // Security
-  getSecuritySettings: () => api.get('/api/system-admin/security/settings'),
-  updateSecuritySettings: (data: any) => api.put('/api/system-admin/security/settings', data),
-  getSecurityLogs: () => api.get('/api/system-admin/security/logs'),
-  
-  // Reports
+  getSettings: async () => {
+    const response = await api.get('/api/system-admin/settings');
+    return response.data;
+  },
+
+  updateSettings: async (data: any) => {
+    const response = await api.put('/api/system-admin/settings', data);
+    return response.data;
+  },
+
+  uploadLogo: async (file: File): Promise<{ logoUrl: string; message: string }> => {
+    const formData = new FormData();
+    formData.append('logo', file);
+    
+    const response = await api.post('/api/system-admin/settings/upload-logo', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  testEmailConfig: async (config: {
+    smtpHost: string;
+    smtpPort: number;
+    smtpUser: string;
+    smtpPassword: string;
+    fromEmail: string;
+    testEmail: string;
+  }): Promise<{ message: string }> => {
+    const response = await api.post('/api/system-admin/settings/test-email', config);
+    return response.data;
+  },
+
+  // Enhanced Reports with real data and export
   getAvailableReports: async (): Promise<ReportType[]> => {
     const response = await api.get('/api/system-admin/reports/available');
     return response.data;
@@ -628,12 +654,32 @@ export const systemAdminApi = {
   generateReport: async (data: {
     reportType: string;
     dateRange?: { start: Date; end: Date };
-    format?: 'json' | 'csv';
+    format?: 'json' | 'csv' | 'excel' | 'pdf';
+    filters?: any;
   }): Promise<any> => {
-    const response = await api.post('/api/system-admin/reports/generate', data);
+    const response = await api.post('/api/system-admin/reports/generate', data, {
+      responseType: data.format && data.format !== 'json' ? 'blob' : 'json'
+    });
     return response.data;
   },
 
+  scheduleReport: async (data: {
+    reportConfig: any;
+    schedule: {
+      enabled: boolean;
+      frequency: 'daily' | 'weekly' | 'monthly';
+      recipients: string[];
+    };
+  }): Promise<{ reportId: string; message: string }> => {
+    const response = await api.post('/api/system-admin/reports/schedule', data);
+    return response.data;
+  },
+
+  // Security
+  getSecuritySettings: () => api.get('/api/system-admin/security/settings'),
+  updateSecuritySettings: (data: any) => api.put('/api/system-admin/security/settings', data),
+  getSecurityLogs: () => api.get('/api/system-admin/security/logs'),
+  
   // Monitoring
   getSystemMetrics: async (): Promise<SystemMetrics> => {
     const response = await api.get('/api/system-admin/monitoring/metrics');
